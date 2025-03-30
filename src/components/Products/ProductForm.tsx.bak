@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+
+interface ProductFormData {
+  name: string;
+  reference: string;
+  description: string;
+  category: string;
+  supplier: string;
+  brand: string;
+  purchasePrice: number;
+  margin: number;
+  sellingPrice: number;
+  vat: number;
+  hasSerial: boolean;
+  multiPurchasePrice: boolean;
+}
+
+export default function ProductForm() {
+  const { register, handleSubmit, control, watch, setValue } = useForm<ProductFormData>({
+    defaultValues: {
+      name: '',
+      reference: '',
+      description: '',
+      category: '',
+      supplier: '',
+      brand: '',
+      purchasePrice: 0,
+      margin: 0,
+      sellingPrice: 0,
+      vat: 20,
+      hasSerial: false,
+      multiPurchasePrice: false
+    }
+  });
+
+  const hasSerial = watch('hasSerial');
+  const multiPurchasePrice = watch('multiPurchasePrice');
+
+  const onSubmit = (data: ProductFormData) => {
+    console.log('Données du formulaire soumises:', data);
+  };
+
+  const calculateSellingPrice = (purchasePrice: number, margin: number, vat: number) => {
+    const priceBeforeVAT = purchasePrice * (1 + margin / 100);
+    return priceBeforeVAT * (1 + vat / 100);
+  };
+
+  const handlePurchasePriceChange = (value: number) => {
+    const margin = watch('margin');
+    const vat = watch('vat');
+    const newSellingPrice = calculateSellingPrice(value, margin, vat);
+    setValue('sellingPrice', Number(newSellingPrice.toFixed(2)));
+  };
+
+  const handleMarginChange = (value: number) => {
+    const purchasePrice = watch('purchasePrice');
+    const vat = watch('vat');
+    const newSellingPrice = calculateSellingPrice(purchasePrice, value, vat);
+    setValue('sellingPrice', Number(newSellingPrice.toFixed(2)));
+  };
+
+  const handleVATChange = (value: number) => {
+    const purchasePrice = watch('purchasePrice');
+    const margin = watch('margin');
+    const newSellingPrice = calculateSellingPrice(purchasePrice, margin, value);
+    setValue('sellingPrice', Number(newSellingPrice.toFixed(2)));
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nom du produit</Label>
+          <Input id="name" {...register('name')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reference">Référence</Label>
+          <Input id="reference" {...register('reference')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Input id="description" {...register('description')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="category">Catégorie</Label>
+          <Input id="category" {...register('category')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="supplier">Fournisseur</Label>
+          <Input id="supplier" {...register('supplier')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="brand">Marque</Label>
+          <Input id="brand" {...register('brand')} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="purchasePrice">Prix d'achat HT</Label>
+          <Input
+            id="purchasePrice"
+            type="number"
+            {...register('purchasePrice', {
+              onChange: (e) => handlePurchasePriceChange(parseFloat(e.target.value))
+            })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="margin">Marge (%)</Label>
+          <Input
+            id="margin"
+            type="number"
+            {...register('margin', {
+              onChange: (e) => handleMarginChange(parseFloat(e.target.value))
+            })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="sellingPrice">Prix de vente TTC</Label>
+          <Input
+            id="sellingPrice"
+            type="number"
+            {...register('sellingPrice')}
+            readOnly
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="vat">TVA (%)</Label>
+          <Select
+            value={watch('vat')}
+            onValueChange={(value) => handleVATChange(parseFloat(value))}
+          >
+            <option value="20">20%</option>
+            <option value="10">10%</option>
+            <option value="5.5">5.5%</option>
+            <option value="2.1">2.1%</option>
+            <option value="0">0%</option>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="hasSerial"
+            {...register('hasSerial')}
+          />
+          <Label htmlFor="hasSerial">Numéro de série</Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="multiPurchasePrice"
+            {...register('multiPurchasePrice')}
+          />
+          <Label htmlFor="multiPurchasePrice">Prix d'achat multiple</Label>
+        </div>
+      </div>
+
+      <Button type="submit">Enregistrer</Button>
+    </form>
+  );
+}
